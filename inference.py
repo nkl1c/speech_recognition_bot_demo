@@ -156,7 +156,6 @@ if __name__ == '__main__':
             frame = get_frame(reference, frame_num)
             if frame is not None and not frame.size == 0:
                 cv2.imwrite(f'frame_{i}.jpg', frame)
-                crop_image('/Users/nikolacrnobrnja/Desktop/hse_project/frame_1.jpg', label_id)
                 get_name(label_id)
                 print(f'Done for result {i}!')
                 break
