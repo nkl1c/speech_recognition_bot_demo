@@ -58,14 +58,14 @@ def build_classifier_speechbrain(device='cpu'):
     return classifier
 
 
-def build_label_decoder(labels_path='vox_ids.json'):
+def build_label_decoder(labels_path='/content/gdrive/MyDrive/project/vox_ids.json'):
     with open(labels_path, 'r') as fp:
         labels = json.load(fp)
     return labels
 
 
 def get_photo_coords(label_id):
-    df = pd.read_csv('all_vox.csv', sep='\t')
+    df = pd.read_csv('/content/gdrive/MyDrive/project/all_vox.csv', sep='\t')
     reference = df.loc[df['id'] == label_id, ['reference']].values[0][0]
     frame = df.loc[df['id'] == label_id, ['frame']].values[0][0]
 
@@ -73,8 +73,7 @@ def get_photo_coords(label_id):
 
 
 def get_name(label_id):
-    import re
-    from pytube import YouTube
+     
 
     # Получить объект YouTube видео по URL
     reference = get_photo_coords(label_id)[0]
@@ -89,9 +88,6 @@ def get_name(label_id):
         print(interviewee_name.group(2))
 
 def get_frame(reference, frame_number):
-    import cv2
-    import os
-    from pytube import YouTube
 
     try:
         yt = YouTube(f"https://www.youtube.com/watch?v={reference}")
@@ -106,27 +102,23 @@ def get_frame(reference, frame_number):
     os.remove('video.mp4')
     return frame
 
-def crop_image(image, id):
+def crop_image(image, id, i):
     from PIL import Image
 
-    all_vox = pd.read_csv('./all_vox.csv', sep='\t')
+    all_vox = pd.read_csv('all_vox.csv', sep='\t')
     image = Image.open(image)
 
-    x = all_vox[all_vox.id == id].x
-    y = all_vox[all_vox.id == id].y
-    w = all_vox[all_vox.id == id].w
-    h = all_vox[all_vox.id == id].h
-    if w <= 1:
+    x = all_vox[all_vox.id == id].x.iloc[0]
+    y = all_vox[all_vox.id == id].y.iloc[0]
+    w = all_vox[all_vox.id == id].w.iloc[0]
+    h = all_vox[all_vox.id == id].h.iloc[0]
+    if w < 1.:
         x, w = x * image.size[0], w * image.size[0]
         y, h = y * image.size[0], h * image.size[0]
-    print(x, y, w, h)
     im_crop = image.crop((x, y, x + w, y + h))
-    print('2')
-    im_crop.save('celeb_image.jpg', quality=95)
-    print('3')
+    im_crop.save(f'celeb_image_{i}.jpg', quality=95)
 
-
-def get_signal(filename='./example3.wav'):
+def get_signal(filename): 
     signal, _ = torchaudio.load(filename)
     return signal
 
@@ -143,12 +135,11 @@ def main(classifier, signal, label_decoder, signal_len=None, top_k=2):
     return top_results, emb
 
 
-if __name__ == '__main__':
-    signal = get_signal()
+def CelebrityVoice(path_voice):
+    signal = get_signal(path_voice)
     label_decoder = build_label_decoder()
     sp_classifier = build_classifier_speechbrain()
     top_results, _ = main(sp_classifier, signal, label_decoder, top_k=2)
-    print(top_results)
 
     for i, (label_id, score) in enumerate(top_results):
         try:
