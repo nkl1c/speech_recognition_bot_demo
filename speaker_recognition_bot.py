@@ -12,75 +12,235 @@ from inference import (build_classifier_speechbrain,
 
 
 
-# Конфигурация
-def read_config(filename = './config.yaml'):
-    with open(filename, 'r') as f:
-        config = yaml.safe_load(f)
-    return config
+bot = telebot.TeleBot('6134902648:AAFDPQBp2ZoEXuhntTnAJgexVIBmlY_WqZo');
 
-def proccess_audio(audio_bytes, target_sr = 16000):
-    data, sr = sf.read(io.BytesIO(audio_bytes))
-    audio = librosa.resample(data, orig_sr=sr, target_sr=target_sr)
+@bot.message_handler(commands=['start'])
+def start(message):
+  bot.send_message(message.chat.id,f"Привет, {message.from_user.first_name}!👋")
+  markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width = 2)
+  btn1 = types.KeyboardButton("LooksLike")
+  btn2 = types.KeyboardButton('Speech->Text')
+  btn3 = types.KeyboardButton('3D Model')
+  btn4 = types.KeyboardButton('Skleyka')
+  btn5 = types.KeyboardButton('PhotoDescriber')
+  btn6 = types.KeyboardButton('CelebrityVoice')
 
-    global classifier
-    global label_decoder
-    global name_mapping
+  bot.send_message(message.from_user.id, "Спасибо за разработку (или просто готовый код):\nLooksLike - @sslatyshev\nSpeech->Text - @EnderPortman\n3D Model - @cloud_01_24\nSkleyka - @cloud_01_24\nPhotoDescriber - @cloud_01_24\nCelebrityVoice - @nkl_c & @elizzz13\nBot - @EnderPortman")
 
-    label_id, score, embedding = recognize(classifier, audio, label_decoder)
-    name_id = name_mapping.get(label_id, label_id)
-
-    # Генерируем случайное изображение из numpy и отправляем его в качестве фото-ответа
-    img = (embedding/embedding.__abs__().max()) * 255
-    img = img.astype(np.uint8)
-    img = img[0].transpose()
-    img = Image.fromarray(img)
-
-    bio = io.BytesIO()
-    bio.name = 'image.png'
-    img.save(bio, 'PNG')
-    bio.seek(0)
-
-    return bio, name_id, score
+  markup.add(btn1, btn2, btn3, btn4, btn5, btn6)
+  bot.send_message(message.from_user.id, "Выбери действие🔽", reply_markup=markup)
 
 
-# Функция для обработки аудиосообщений
-async def audio_message_handler(update: telegram.Update, context: CallbackContext):
-    audi_file_id = (update.message.audio or update.message.voice).file_id
-    audio_file = await context.bot.get_file(audi_file_id)
-    audio_bytes = await audio_file.download_as_bytearray()
-    # Отправляем ответное сообщение
-    await update.message.reply_text("аудио получено, обрабатываю...")
+task_type = 0
+@bot.message_handler(content_types=['text'])
+def text(message):
+  global task_type
+  mess = message.text
 
-    img, name_id, score = proccess_audio(audio_bytes)
+  if mess == "LooksLike":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    task_type = 1
+    ans = "Жду твое фото😊📷"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup)
+  
+  elif mess == "Speech->Text":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    task_type = 2
+    ans = "Жду аудио🎧"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup)
+    bot.send_message(message.from_user.id, "Гс не более 15 сек на русском\nФункция может сработать не сразу, так как это бесплатно :)")
 
-    await update.message.reply_text(f'Вы похожи на {name_id} на {score} %')
-    await context.bot.send_photo(chat_id=update.message.chat_id, photo=img)
-    return
+  elif mess == "3D Model":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    task_type = 3
+    ans = "Жду картинку🌇"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup)
 
-async def start_commmand_handler(update, context):
-    await update.message.reply_text('Hello! Welcome to this voice2celeb bot!')
+  elif mess == "Skleyka":
+      markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+      btn = types.KeyboardButton("Хочу выбрать снова↩️")
+      markup.add(btn)
+      task_type = 4
+      ans = "Жду два фото с разного ракурса🌇🌆"
+      bot.send_message(message.from_user.id, ans, reply_markup=markup)
+  
+  elif mess == "PhotoDescriber":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    task_type = 5
+    ans = "Жду картинку зверя🐸 или чего угодно🎃"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup)
 
-# Точка входа
-def main(config: dict):
-    # Создаем объект Updater и передаем ему токен бота
-    application = Application.builder().token(config['api_token']).build()
+  elif mess == "CelebrityVoice":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    task_type = 6
+    ans = "Скажи мне что-нибудь🗣"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup)
 
-    # Commands
-    application.add_handler(CommandHandler('start', start_commmand_handler))
-    application.add_handler(MessageHandler(filters.AUDIO, audio_message_handler))
-    application.add_handler(MessageHandler(filters.VOICE, audio_message_handler))
+  elif mess == "Хочу выбрать снова↩️" or mess == "Круто! Давай ещё🤩" or mess == "👌" or mess == "Давай!":
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton("LooksLike")
+    btn2 = types.KeyboardButton('Speech->Text')
+    btn3 = types.KeyboardButton('3D Model')
+    btn4 = types.KeyboardButton('Skleyka')
+    btn5 = types.KeyboardButton('PhotoDescriber')
+    btn6 = types.KeyboardButton('CelebrityVoice')
 
-    # Run bot
-    application.run_polling(1.0)
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6)
+    ans = "Выбери действие🔽"
+    bot.send_message(message.from_user.id, ans, reply_markup=markup) 
 
+  else:
+    print(task_type)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    task_type = 0
+    markup.add(btn)
+    bot.send_message(message.from_user.id, text = "🐈", reply_markup=markup)    
 
-if __name__ == '__main__':
-    global classifier
-    global label_decoder
-    global name_mapping
-    classifier = build_classifier_speechbrain()
-    label_decoder = build_label_decoder()
-    name_mapping = build_name_decoder()
+count_files = 0
+@bot.message_handler(content_types=['photo'])
+def photo(message):
+  global task_type
+  global count_files
+  if task_type in [1, 3, 4, 5]:
+    count_files += 1
 
-    config = read_config(filename = './config.yaml')
-    main(config)
+    if count_files == 2 and task_type == 4:
+      photo_id = message.photo[-1].file_id
+      photo_file = bot.get_file(photo_id)
+      photo_bytes = bot.download_file(photo_file.file_path)
+      with open("im2.jpg", 'wb') as new_file:
+            new_file.write(photo_bytes)
+
+      Skleyka("im1.jpg", "im2.jpg")
+      photo = open('result.jpg', 'rb')
+      bot.send_photo(message.chat.id, photo)
+      
+      ans = 'И как?🧐'
+      markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+      btn = types.KeyboardButton("Круто! Давай ещё🤩")
+      markup.add(btn)
+      bot.send_message(message.from_user.id, ans, reply_markup=markup)
+      task_type = 0
+      count_files = 0
+
+    elif count_files == 1:
+      photo_id = message.photo[-1].file_id
+      photo_file = bot.get_file(photo_id) 
+      photo_bytes = bot.download_file(photo_file.file_path)
+      with open("im1.jpg", 'wb') as new_file:
+            new_file.write(photo_bytes)
+
+      if task_type == 1:
+        bot.send_message(message.from_user.id, 'Я тебя узнал!\nМне нужно 8 минут, чтобы найти фото...')
+        bot.send_message(message.from_user.id, '👀')
+        im1 = LooksLike("im1.jpg")
+        bot.send_photo(message.chat.id, im1)
+        ans = 'И как?🧐'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn = types.KeyboardButton("Круто! Давай ещё🤩")
+        markup.add(btn)
+        bot.send_message(message.from_user.id, ans, reply_markup=markup)
+        task_type = 0
+        count_files = 0
+
+      elif task_type == 3:
+        DDD_model("im1.jpg")
+        doc = open('/content/model.stl')
+        bot.send_document(message.chat.id, doc)
+        ans = 'И как?🧐'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn = types.KeyboardButton("Круто! Давай ещё🤩")
+        markup.add(btn)
+        bot.send_message(message.from_user.id, ans, reply_markup=markup)
+        task_type = 0
+        count_files = 0
+      
+      elif task_type == 5:
+        text = things_classification("im1.jpg")
+        bot.send_message(message.from_user.id, 'Вероятности c описанием готовы!🥳')
+        bot.send_message(message.from_user.id, text)
+        ans = 'И как?🧐'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn = types.KeyboardButton("Круто! Давай ещё🤩")
+        markup.add(btn)
+        bot.send_message(message.from_user.id, ans, reply_markup=markup)
+        task_type = 0
+        count_files = 0      
+
+  else:
+    task_type = 0
+    count_files = 0
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    bot.send_message(message.from_user.id, text = "🐈", reply_markup=markup)
+
+@bot.message_handler(content_types=['voice'])
+def voice_rec(message):
+  global task_type
+  if task_type in [2, 6]:
+    if task_type == 2:
+      bot.send_message(message.from_user.id, "Какой красивый голос🥰")
+      filename = str(uuid.uuid4())
+      file_name_full=filename+".ogg"
+      file_name_full_converted=filename+".wav"
+      file_info = bot.get_file(message.voice.file_id)
+      downloaded_file = bot.download_file(file_info.file_path)
+      with open(file_name_full, 'wb') as new_file:
+          new_file.write(downloaded_file)
+      os.system("ffmpeg -i "+file_name_full+"  "+file_name_full_converted)
+      text=speech(file_name_full_converted)
+
+      bot.send_message(message.from_user.id, text = text)
+      ans = 'Хочешь ещё?🤔'
+      markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+      btn = types.KeyboardButton("Давай!")
+      markup.add(btn)
+      bot.send_message(message.from_user.id, ans, reply_markup=markup)
+      task_type = 0 
+
+    elif task_type == 6:
+      bot.send_message(message.from_user.id, "Приятный голос🤤")
+      bot.send_message(message.from_user.id, "Подожди немного..")
+      filename = str(uuid.uuid4())
+      file_name_full=filename+".ogg"
+      file_name_full_converted=filename+".wav"
+      file_info = bot.get_file(message.voice.file_id)
+      downloaded_file = bot.download_file(file_info.file_path)
+      with open(file_name_full, 'wb') as new_file:
+          new_file.write(downloaded_file)
+      os.system("ffmpeg -i "+file_name_full+"  "+file_name_full_converted)
+
+      CelebrityVoice(file_name_full_converted)
+
+      bot.send_message(message.from_user.id, "У тебя такой же голос, как у....")
+      photo = open('frame_0.jpg', 'rb')
+      bot.send_photo(message.from_user.id, photo)
+
+      ans = 'Хочешь ещё?🤔'
+      markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+      btn = types.KeyboardButton("Давай!")
+      markup.add(btn)
+      bot.send_message(message.from_user.id, ans, reply_markup=markup)
+      task_type = 0 
+
+  else:
+    task_type = 0
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn = types.KeyboardButton("Хочу выбрать снова↩️")
+    markup.add(btn)
+    bot.send_message(message.from_user.id, text = "🐈", reply_markup=markup)  
+  
+
+bot.polling(none_stop=True, interval=0)
